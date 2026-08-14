@@ -1,3 +1,11 @@
+# import trip_service
+from services.trip_service import (
+    get_trip_category,
+    get_travel_season,
+    calculate_daily_budget,
+    recommended_places
+)
+
 # input data
 destination = input("Destination : ")
 country = input("Country : ")
@@ -20,3 +28,14 @@ def print_trip_summary(destination, country, days, budget, currency, travel_mont
 
 # call function
 print_trip_summary(destination, country, days, budget, currency, travel_month)
+
+print(f"\nCategory : {get_trip_category(budget)}")
+print(f"Season : {get_travel_season(travel_month)}")
+print(f"Daily Budget : {calculate_daily_budget(budget, days)} \n")
+
+print("Recommended Places:")
+for place in recommended_places:
+    print(f"- {place}")
+
+
+

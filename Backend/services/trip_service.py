@@ -1,0 +1,32 @@
+# trip category function
+def get_trip_category(budget):
+    if budget < 1000:
+        category = "Backpacker"
+    elif budget <= 3000:
+        category = "Standard"
+    else:
+        category = "Luxury"\
+    
+    return category
+
+# travel season function 
+def get_travel_season(month):
+    if month == "December":
+        season = "Peak Season"
+    elif month == "June":
+        season = "Holiday Season"
+    else:
+        season = "Regular Season"
+    
+    return season
+
+# daily budget function 
+def calculate_daily_budget(budget, days):
+    return budget/days
+
+# places recommendation
+recommended_places = [
+    "Tokyo Tower",
+    "Shibuya",
+    "Mount Fuji"
+]
