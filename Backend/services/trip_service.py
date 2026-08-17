@@ -5,9 +5,18 @@ def get_trip_category(budget):
     elif budget <= 3000:
         category = "Standard"
     else:
-        category = "Luxury"\
+        category = "Luxury"
     
     return category
+
+# transportation recommendation function 
+def get_transport_recommendation(category):
+    if category == "Backpacker":
+        return "Bus"
+    elif category == "Standard":
+        return "Train"
+    else:
+        return "Flight"
 
 # travel season function 
 def get_travel_season(month):
