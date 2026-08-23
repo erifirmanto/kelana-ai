@@ -9,6 +9,7 @@ from services.trip_service import (
 from models.trip import Trip
 from database import SessionLocal
 from fastapi import FastAPI, HTTPException
+from services.bedrock_service import get_ai_recommendation
 
 app = FastAPI()
 
@@ -43,13 +44,21 @@ def create_trip(request: TripRequest):
         category
     )
 
+    ai_recommendation = get_ai_recommendation(
+        destination = request.destination,
+        days = request.days,
+        budget = request.budget,
+        travel_style = request.travel_style
+    )
+    
     # create a Trip ORM object
     trip = Trip(
         destination = request.destination,
         days = request.days,
         budget = request.budget,
         category = category,
-        daily_budget = daily_budget
+        daily_budget = daily_budget,
+        ai_recommendation = ai_recommendation
     )
 
     # save to PostgreSQL
@@ -137,3 +146,4 @@ def delete_trip(trip_id: int):
     return {
         "message": f"Trip with id {trip_id} deleted successfully"
     }
+    
