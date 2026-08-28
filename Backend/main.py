@@ -11,16 +11,21 @@ from database import SessionLocal
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from services.bedrock_service import get_ai_recommendation
+from dotenv import load_dotenv
+import os 
+
+load_dotenv()
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = ["http://localhost:3000"],
+    allow_origins = [os.getenv("FRONTEND_URL", "http://localhost:3000")],
     allow_credentials = True,
     allow_methods = ["*"],
     allow_headers = ["*"]
 )
+
 # a GET endpoint at the root path
 @app.get("/")
 def home():
@@ -65,6 +70,7 @@ def create_trip(request: TripRequest):
         days = request.days,
         budget = request.budget,
         category = category,
+        travel_style=request.travel_style,
         daily_budget = daily_budget,
         ai_recommendation = ai_recommendation
     )
@@ -90,7 +96,7 @@ def get_transportations():
 @app.get("/api/v1/trips")
 def list_trips():
     db = SessionLocal()
-    trips = db.query(Trip).all()
+    trips = db.query(Trip).order_by(Trip.created_at.desc()).all()
     db.close()
     return trips
 

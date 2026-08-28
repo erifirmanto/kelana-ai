@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import { generateTrip } from "@/services/tripService";
 
 interface TripResult {
   destination: string;
@@ -13,6 +15,8 @@ interface TripResult {
 }
 
 export default function Home() {
+  const router = useRouter();
+
   const [destination, setDestination] = useState("Japan");
   const [budget, setBudget] = useState(2000);
   const [days, setDays] = useState(5);
@@ -29,24 +33,15 @@ export default function Home() {
     setResult(null);
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/trips", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          destination,
-          budget,
-          days,
-          travel_style: travelStyle,
-        }),
+      await generateTrip({
+        destination,
+        budget,
+        days,
+        travel_style: travelStyle,
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.detail ?? `Server error: ${res.status}`);
-      }
+      router.push("/trips");
 
-      const data: TripResult = await res.json();
-      setResult(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
