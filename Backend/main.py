@@ -7,16 +7,57 @@ from services.trip_service import (
     get_transport_recommendation
 )
 from models.trip import Trip
+from models.user import User
 from database import SessionLocal
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from services.bedrock_service import get_ai_recommendation
+from services.auth_service import register, login, SECRET_KEY, ALGORITHM
 from dotenv import load_dotenv
+from jose import jwt
+
 import os 
 
 load_dotenv()
 
 app = FastAPI()
+
+security = HTTPBearer()
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        user_id = int(payload["sub"])
+
+    except Exception:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.id == user_id).first()
+
+    db.close()
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User not found"
+        )
+
+    return user
 
 app.add_middleware(
     CORSMiddleware,
@@ -44,9 +85,51 @@ class TripRequest(BaseModel):
 class TripUpdate(BaseModel):
     budget: float
 
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+@app.post("/api/v1/auth/register")
+def register_user(request: RegisterRequest):
+
+    user = register(
+        name=request.name,
+        email=request.email,
+        password=request.password
+    )
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email
+    }
+
+@app.post("/api/v1/auth/login")
+def login_user(request: LoginRequest):
+    token = login(
+        email=request.email,
+        password=request.password
+    )
+
+    if token is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password"
+        )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
+
 # POST endpoint - receives JSON, returns JSON 
 @app.post("/api/v1/trips")
-def create_trip(request: TripRequest):
+def create_trip(request: TripRequest, current_user: User = Depends(get_current_user)):
     daily_budget = calculate_daily_budget(
         request.budget, request.days
     )
@@ -71,6 +154,7 @@ def create_trip(request: TripRequest):
         budget = request.budget,
         category = category,
         travel_style=request.travel_style,
+        user_id=current_user.id,
         daily_budget = daily_budget,
         ai_recommendation = ai_recommendation
     )
@@ -94,16 +178,36 @@ def get_transportations():
     return ["Bus", "Train", "Flight"]
 
 @app.get("/api/v1/trips")
-def list_trips():
+def list_trips(current_user: User = Depends(get_current_user)):
     db = SessionLocal()
-    trips = db.query(Trip).order_by(Trip.created_at.desc()).all()
+
+    trips = (
+        db.query(Trip)
+        .filter(Trip.user_id == current_user.id)
+        .order_by(Trip.created_at.desc())
+        .all()
+    )
+
     db.close()
+
     return trips
 
 @app.get("/api/v1/trips/{trip_id}")
-def get_trip(trip_id: int):
+def get_trip(
+    trip_id: int,
+    current_user: User = Depends(get_current_user)
+):
     db = SessionLocal()
-    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+
+    trip = (
+        db.query(Trip)
+        .filter(
+            Trip.id == trip_id,
+            Trip.user_id == current_user.id
+        )
+        .first()
+    )
+
     db.close()
 
     if trip is None:
@@ -115,7 +219,11 @@ def get_trip(trip_id: int):
     return trip
 
 @app.put("/api/v1/trips/{trip_id}")
-def update_trip(trip_id: int, request: TripUpdate):
+def update_trip(
+    trip_id: int,
+    request: TripUpdate,
+    current_user: User = Depends(get_current_user)
+):
     db = SessionLocal()
 
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
@@ -125,6 +233,13 @@ def update_trip(trip_id: int, request: TripUpdate):
         raise HTTPException(
             status_code=404,
             detail=f"Trip with id {trip_id} not found"
+        )
+
+    if trip.user_id != current_user.id:
+        db.close()
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to update this trip"
         )
 
     trip.budget = request.budget
@@ -141,7 +256,10 @@ def update_trip(trip_id: int, request: TripUpdate):
     return trip
 
 @app.delete("/api/v1/trips/{trip_id}")
-def delete_trip(trip_id: int):
+def delete_trip(
+    trip_id: int,
+    current_user: User = Depends(get_current_user)
+):
     db = SessionLocal()
 
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
@@ -153,6 +271,13 @@ def delete_trip(trip_id: int):
             detail=f"Trip with id {trip_id} not found"
         )
 
+    if trip.user_id != current_user.id:
+        db.close()
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete this trip"
+        )
+
     db.delete(trip)
     db.commit()
     db.close()
@@ -160,4 +285,3 @@ def delete_trip(trip_id: int):
     return {
         "message": f"Trip with id {trip_id} deleted successfully"
     }
-    

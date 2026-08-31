@@ -1,7 +1,13 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export async function getTrips() {
-  const res = await fetch(`${API_URL}/trips`);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/trips`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!res.ok) {
     throw new Error("Failed to fetch trips");
@@ -11,7 +17,13 @@ export async function getTrips() {
 }
 
 export async function getTrip(id: number) {
-  const res = await fetch(`${API_URL}/trips/${id}`);
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/trips/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   if (!res.ok) {
     throw new Error("Failed to fetch trip");
@@ -26,10 +38,13 @@ export async function generateTrip(data: {
   days: number;
   travel_style: string;
 }) {
+  const token = localStorage.getItem("token");
+
   const res = await fetch(`${API_URL}/trips`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(data),
   });

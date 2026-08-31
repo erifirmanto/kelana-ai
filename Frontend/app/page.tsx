@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { generateTrip } from "@/services/tripService";
@@ -16,6 +16,14 @@ interface TripResult {
 
 export default function Home() {
   const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+    }
+  }, [router]);
 
   const [destination, setDestination] = useState("Japan");
   const [budget, setBudget] = useState(2000);
