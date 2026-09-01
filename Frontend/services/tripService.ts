@@ -55,3 +55,24 @@ export async function generateTrip(data: {
 
   return res.json();
 }
+
+export async function askQuestion(question: string) {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/ask`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      question,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to ask question");
+  }
+
+  return res.json();
+}

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from services.bedrock_service import get_ai_recommendation
 from services.auth_service import register, login, SECRET_KEY, ALGORITHM
+from services.kb_service import retrieve_and_generate
 from dotenv import load_dotenv
 from jose import jwt
 
@@ -94,6 +95,16 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+    # @field_validator("email")
+    # @classmethod
+    # def email_must_contain_at(cls, v: str) -> str:
+    #     if "@" not in v or "." not in v.split("@")[-1]:
+    #         raise ValueError("invalid email address")
+    #     return v.lower().strip()
+
+class AskRequest(BaseModel):
+    question: str
+    
 @app.post("/api/v1/auth/register")
 def register_user(request: RegisterRequest):
 
@@ -167,6 +178,18 @@ def create_trip(request: TripRequest, current_user: User = Depends(get_current_u
     db.close()
     return trip
 
+@app.post("/api/v1/ask")
+def ask(request: AskRequest):
+    try:
+        result = retrieve_and_generate(request.question)
+    except ValueError as e:
+        raise HTTPException(status_code = 400, detail = str(e))
+    return {
+        "question": request.question,
+        "answer": result["answer"],
+        "source": result["source"]        
+    }
+  
 # get recommendations
 @app.get("/api/v1/recommendations")
 def get_recommendations():
