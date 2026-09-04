@@ -8,11 +8,15 @@ from services.trip_service import (
 )
 from models.trip import Trip
 from models.user import User
+from models.conversation import Conversation, Message
 from database import SessionLocal
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from services.bedrock_service import get_ai_recommendation
+from services.bedrock_service import (
+    get_ai_recommendation,
+    generate_chat_response
+)
 from services.auth_service import register, login, SECRET_KEY, ALGORITHM
 from services.kb_service import retrieve_and_generate
 from dotenv import load_dotenv
@@ -104,6 +108,9 @@ class LoginRequest(BaseModel):
 
 class AskRequest(BaseModel):
     question: str
+
+class MessageRequest(BaseModel):
+    content: str
     
 @app.post("/api/v1/auth/register")
 def register_user(request: RegisterRequest):
@@ -189,7 +196,171 @@ def ask(request: AskRequest):
         "answer": result["answer"],
         "source": result["source"]        
     }
-  
+
+@app.post("/api/v1/conversations")
+def create_conversation(
+    current_user: User = Depends(get_current_user)
+):
+    db = SessionLocal()
+
+    conversation = Conversation(
+        user_id=current_user.id
+    )
+
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
+    db.close()
+
+    return {
+        "conversation_id": conversation.id
+    }
+
+@app.post("/api/v1/conversations/{conversation_id}/messages")
+def send_message(
+    conversation_id: int,
+    request: MessageRequest,
+    current_user: User = Depends(get_current_user)
+):
+    db = SessionLocal()
+
+    # 1. Find conversation and verify ownership
+    conversation = (
+        db.query(Conversation)
+        .filter(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if conversation is None:
+        db.close()
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversation with id {conversation_id} not found"
+        )
+
+    # 2. Save user message
+    user_message = Message(
+        conversation_id=conversation.id,
+        role="user",
+        content=request.content
+    )
+
+    db.add(user_message)
+    db.commit()
+
+    # 3. Load previous messages
+    messages = (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    # 4. Build prompt
+    prompt_messages = [
+        {
+            "role": message.role,
+            "content": [
+                {"text": message.content}
+            ]
+        }
+        for message in messages
+    ]
+
+    # 5. Call Amazon Bedrock
+    ai_response = generate_chat_response(prompt_messages)
+
+    # 6. Save AI response
+    assistant_message = Message(
+        conversation_id=conversation.id,
+        role="assistant",
+        content=ai_response
+    )
+
+    db.add(assistant_message)
+    db.commit()
+    db.refresh(assistant_message)
+
+    # 7. Return response
+    response = {
+        "conversation_id": conversation.id,
+        "message": {
+            "role": assistant_message.role,
+            "content": assistant_message.content
+        }
+    }
+
+    db.close()
+
+    return response
+    
+@app.get("/api/v1/conversations")
+def list_conversations(
+    current_user: User = Depends(get_current_user)
+):
+    db = SessionLocal()
+
+    conversations = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == current_user.id)
+        .order_by(Conversation.created_at.desc())
+        .all()
+    )
+
+    db.close()
+
+    return conversations
+
+@app.get("/api/v1/conversations/{conversation_id}/messages")
+def get_conversation_messages(
+    conversation_id: int,
+    current_user: User = Depends(get_current_user)
+):
+    db = SessionLocal()
+
+    # 1. Find conversation and verify ownership
+    conversation = (
+        db.query(Conversation)
+        .filter(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if conversation is None:
+        db.close()
+        raise HTTPException(
+            status_code=404,
+            detail=f"Conversation with id {conversation_id} not found"
+        )
+
+    # 2. Load messages
+    messages = (
+        db.query(Message)
+        .filter(Message.conversation_id == conversation.id)
+        .order_by(Message.created_at.asc(), Message.id.asc())
+        .all()
+    )
+
+    # 3. Build response before closing DB session
+    response = [
+        {
+            "id": message.id,
+            "role": message.role,
+            "content": message.content,
+            "created_at": message.created_at
+        }
+        for message in messages
+    ]
+
+    db.close()
+
+    return response
+    
 # get recommendations
 @app.get("/api/v1/recommendations")
 def get_recommendations():

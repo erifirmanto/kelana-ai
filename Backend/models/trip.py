@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 
@@ -20,3 +21,5 @@ class Trip(Base):
         server_default=func.now(),
         nullable=False
     )
+
+    user = relationship("User", back_populates="trips")

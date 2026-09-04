@@ -73,3 +73,26 @@ def get_ai_recommendation(destination: str, days: int, budget: float, travel_sty
     # Extract text from Nova response structure
     recommendation = response_body["output"]["message"]["content"][0]["text"]
     return recommendation
+
+def generate_chat_response(messages: list[dict]) -> str:
+    """
+    Generate an AI response using the conversation history.
+    """
+
+    client = get_bedrock_client()
+    model_id = os.getenv("MODEL-ID", "amazon.nova-lite-v1:0")
+
+    request_body = {
+        "messages": messages
+    }
+
+    response = client.invoke_model(
+        modelId=model_id,
+        body=json.dumps(request_body),
+        contentType="application/json",
+        accept="application/json",
+    )
+
+    response_body = json.loads(response["body"].read())
+
+    return response_body["output"]["message"]["content"][0]["text"]
