@@ -179,4 +179,4 @@ export default function AssistantPage() {
       </div>
     </main>
   );
-}
+} 
