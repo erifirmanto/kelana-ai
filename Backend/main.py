@@ -9,7 +9,7 @@ from services.trip_service import (
 from models.trip import Trip
 from models.user import User
 from models.conversation import Conversation, Message
-from database import SessionLocal
+from database import SessionLocal, init_db
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -27,6 +27,8 @@ import os
 load_dotenv()
 
 app = FastAPI()
+
+init_db()
 
 security = HTTPBearer()
 
