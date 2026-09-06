@@ -162,7 +162,7 @@ export default function ChatPage() {
         const data = await getConversations();
 
         const conversationsWithTitles = await Promise.all(
-          data.map(async (conversation) => {
+          data.map(async (conversation: Conversation) => {
             try {
               const messages =
                 await getConversationMessages(conversation.id);
