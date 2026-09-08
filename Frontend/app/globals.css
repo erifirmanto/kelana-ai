@@ -3309,3 +3309,97 @@ body {
 .chat-page .brand-subtitle {
   color: #6a8491 !important;
 }
+
+/* =========================================================
+   KELANAAI REGISTER — COMPACT LAYOUT
+   ========================================================= */
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-panel {
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-inner {
+  padding-top: 4px;
+  padding-bottom: 24px;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-brand {
+  margin-bottom: 28px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form {
+  gap: 11px !important;
+  margin-top: 22px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form input {
+  height: 46px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form button {
+  height: 49px !important;
+  margin-top: 2px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-note {
+  margin-top: 16px;
+  padding-top: 13px;
+}
+
+/* Register: final viewport fit */
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-brand {
+  margin-bottom: 22px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-heading h2 {
+  margin-bottom: 8px !important;
+  font-size: clamp(32px, 3vw, 44px) !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form {
+  gap: 9px !important;
+  margin-top: 18px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form input {
+  height: 43px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-form button {
+  height: 46px !important;
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-note {
+  margin-top: 12px !important;
+  padding-top: 10px !important;
+}
+
+/* Register: keep the account link visible */
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-inner {
+  transform: translateY(-10px);
+}
+
+.kelana-login:has(input[placeholder="Create a password"]) .kelana-login-note {
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+}
+
+/* Login — register CTA */
+.kelana-login-register {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--kelana-muted);
+}
+
+.kelana-login-register a {
+  color: var(--kelana-blue);
+  font-weight: 800;
+  text-decoration: none;
+  transition: color .2s ease;
+}
+
+.kelana-login-register a:hover {
+  color: var(--kelana-cyan);
+}

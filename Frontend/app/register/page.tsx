@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -30,35 +29,53 @@ function FreedomMark({ dark = false }: { dark?: boolean }) {
   );
 }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
       });
 
       if (!res.ok) {
-        throw new Error("Invalid email or password");
+        const data = await res.json().catch(() => null);
+
+        throw new Error(
+          data?.detail || "Unable to create your account."
+        );
       }
 
-      const data = await res.json();
-      localStorage.setItem("token", data.access_token);
-      router.push("/");
+      router.push("/login");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong."
+      );
     } finally {
       setLoading(false);
     }
@@ -99,6 +116,7 @@ export default function LoginPage() {
             <div className="kelana-login-brand-icon">
               <FreedomMark dark />
             </div>
+
             <div className="kelana-login-brand-wordmark">
               <strong>Kelana</strong>
               <span>AI</span>
@@ -106,14 +124,28 @@ export default function LoginPage() {
           </div>
 
           <div className="kelana-login-heading">
-            <span className="kelana-eyebrow">WELCOME BACK</span>
-            <h2>Ready for your next adventure?</h2>
+            <span className="kelana-eyebrow">CREATE YOUR ACCOUNT</span>
+
+            <h2>Ready to start your journey?</h2>
+
             <p>
-              Sign in and pick up where your journey left off.
+              Create your account and let KelanaAI plan your next adventure.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="kelana-login-form">
+            <label>
+              Name
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                autoComplete="name"
+                required
+              />
+            </label>
+
             <label>
               Email
               <input
@@ -132,32 +164,43 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
+                placeholder="Create a password"
+                autoComplete="new-password"
                 required
               />
             </label>
 
-            {error && <p className="kelana-login-error">{error}</p>}
+            <label>
+              Confirm Password
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat your password"
+                autoComplete="new-password"
+                required
+              />
+            </label>
+
+            {error && (
+              <p className="kelana-login-error">{error}</p>
+            )}
 
             <button type="submit" disabled={loading}>
               <span>
-                {loading ? "Opening your journey..." : "Continue your journey"}
+                {loading
+                  ? "Creating your journey..."
+                  : "Start your journey"}
               </span>
               <strong>→</strong>
             </button>
           </form>
 
-          <div className="kelana-login-register">
-            <span>New to KelanaAI?</span>{" "}
-            <Link href="/register">Create an account →</Link>
-          </div>
-          
           <div className="kelana-login-note">
             <span>✦</span>
             <p>
-              Your travel companion for destinations, itineraries and
-              spontaneous ideas.
+              Already have an account?{" "}
+              <a href="/login">Sign in →</a>
             </p>
           </div>
         </div>
